@@ -5,9 +5,40 @@
       <link rel="stylesheet" media="screen" href="src/kanji.css" />
    </head>
    <body>
+      <form id="form1">
+         <input type="text" name="kanji" id="kanji"/>
+         <script type="text/javascript">
+            const param_kanji = (new URLSearchParams(window.location.search)).get('kanji')
+            if (param_kanji != null) {
+               document.getElementById("kanji").setAttribute('value', param_kanji);
+            }
+         </script>
+
+         <div>
+            <label>Type de pinceau: </label>
+            <input type="radio" id="brushClassic" name="brush" value="classic">
+            <label for="brushClassic">Classic</label>
+            <input type="radio" id="brushBlur" name="brush" value="blur">
+            <label for="brushBlur">Flouté</label>
+         </div>
+         <script type="text/javascript">
+            const param_brush = (new URLSearchParams(window.location.search)).get('brush')
+            if (param_brush != null) {
+               if (param_brush == 'blur') {
+                  console.log("BLUR")
+                  document.getElementById("brushBlur").setAttribute('checked', true);
+               }
+               if (param_brush == 'classic') {
+                  console.log("CLASSIC")
+                  document.getElementById("brushClassic").setAttribute('checked', true);
+               }
+            }
+         </script>
+         <button type="submit" form="form1" value="Submit">Valider</button>
+      </form>
       <div id="kanji_strokes_id" class="kanji_strokes" data-area-name="brush">
          <button class="kanji_play_button">
-            <svg viewBox="0 0 30 30" class="icon play-circle-icon "></svg>
+            <svg viewBox="0 0 30 30" class="icon play-circle-icon " color="#fff"></svg>
          </button>
          <div class="stage">
             <canvas id="my_canvas" width="600" height="600"></canvas>
@@ -15,56 +46,83 @@
       </div>
       <script src="src/kanji.js"></script>
       <script>
-         (function() {
+         /**
+          * Indique si la chaine de caractère est un kanji unique
+          */
+         function isKanji(kanji_value) {
+            console.log("Value: >" + kanji_value + "<")
+            if (! /^[\u4e00-\u9faf]+$/.test(kanji_value)) {
+               console.log("Not a Kanji")
+               return false
+            }
+            if (kanji_value.length != 1) {
+               console.log("Only one character expected")
+               return false
+            }
+            return true
+         }
+         /**
+          * Transforme un kanji en sa valeur unicode
+          */
+         function toUnicodeValue(character) {
+            var code = character.charCodeAt(0);
+            var codeHex = code.toString(16);
+            while (codeHex.length < 5) {
+               codeHex = "0" + codeHex;
+            }
+            return codeHex;
+         }
+         /**
+          * Initialise l'animation
+          */
+         function initAnimation(response) {
+            var k;
+            var el = $('#kanji_strokes_id');
+            var result = [];
+            var doc = $(response);
+            doc.find('path[d]').each(function() {
+               var el = $(this);
+               var type = el.attr('kvg:type');
+               var paths = el.attr('d');
+               result.push(type.charCodeAt(0).toString(16) + ':' + paths);
+            });
+            el.addClass('loaded');
+            el.show();
+            brush_type = document.querySelector('input[name="brush"]:checked').value;
+
+            k = new Kanji(result, el, {
+               brush: 'src/brush_' + brush_type + '.png'
+            });
+            k.draw();
+            $(".kanji_play_button").prop("onclick", null).off("click");
+            $('.kanji_play_button', el).on('click', function() {
+               console.log("kanji_play_button")
+               el.addClass('activated');
+               k.animateFromStart();
+            });
+         }
+         /**
+          * Initialise l'environnement avec les valeurs du formulaire
+          */
+         function initContext() {
+            kanji_value = document.getElementById("kanji").getAttribute('value');
             var url = '../kanjivg/kanji/04fe4-Kaisho.svg';
-/*
-            const canvas = $('canvas#my_canvas')[0];
-            var ctx = canvas.getContext("2d");
-            var data = [],
-               stream = canvas.captureStream(),
-               recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-            recorder.ondataavailable = function(event) {
-               if (event.data && event.data.size) {
-                  data.push(event.data);
-                  console.log("DATA")
+            if (isKanji(kanji_value)) {
+               unicode_value = toUnicodeValue(kanji_value)
+               console.log(unicode_value)
+               var url = '../kanjivg/kanji/' + unicode_value + '.svg';
+            }
+            $.ajax({
+               type: 'GET',
+               dataType: 'xml',
+               url: url,
+               success: function(response) {
+                  initAnimation(response);
                }
-            };
-            recorder.onstop = () => {
-               var url = URL.createObjectURL(new Blob(data, { type: "video/webm" }));
-               console.log("END")
-            };
-*/
-            function initAnimation(response) {
-               var k;
-               var el = $('#kanji_strokes_id');
-               var result = [];
-               var doc = $(response);
-               doc.find('path[d]').each(function() {
-                  var el = $(this);
-                  var type = el.attr('kvg:type');
-                  var paths = el.attr('d');
-                  result.push(type.charCodeAt(0).toString(16) + ':' + paths);
-               });
-               el.addClass('loaded');
-               el.show();
-               k = new Kanji(result, el, {
-                  brush: 'src/brush.png'
-               });
-               k.draw();
-               $('.kanji_play_button', el).on('click', function() {
-                  el.addClass('activated');
-//                  recorder.start();
-                  k.animateFromStart();
-               });
-           }
-         $.ajax({
-             type: 'GET',
-             dataType: 'xml',
-             url: url,
-             success: function(response) {
-               initAnimation(response);
-             }
-           });
+            });
+         }
+         (function() {
+            initContext();
          })();
       </script>
    </body>

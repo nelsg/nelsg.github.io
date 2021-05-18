@@ -4,9 +4,6 @@
 [submodule "kanimaji"]
 	path = kanimaji
 	url = https://github.com/maurimo/kanimaji
-[submodule "kanimaji_aehlke"]
-	path = kanimaji_aehlke
-	url = https://github.com/aehlke/kanimaji
 [submodule "kanimaji_jcsirot"]
 	path = kanimaji_jcsirot
 	url = https://github.com/jcsirot/kanimaji.git

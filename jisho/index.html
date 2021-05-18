@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+      <link rel="stylesheet" media="screen" href="src/kanji.css" />
+   </head>
+   <body>
+      <div id="kanji_strokes_id" class="kanji_strokes" data-area-name="brush">
+         <button class="kanji_play_button">
+            <svg viewBox="0 0 30 30" class="icon play-circle-icon "></svg>
+         </button>
+         <div class="stage">
+            <canvas id="my_canvas" width="600" height="600"></canvas>
+         </div>
+      </div>
+      <script src="src/kanji.js"></script>
+      <script>
+         (function() {
+            var url = '../kanjivg/kanji/04fe4-Kaisho.svg';
+/*
+            const canvas = $('canvas#my_canvas')[0];
+            var ctx = canvas.getContext("2d");
+            var data = [],
+               stream = canvas.captureStream(),
+               recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+            recorder.ondataavailable = function(event) {
+               if (event.data && event.data.size) {
+                  data.push(event.data);
+                  console.log("DATA")
+               }
+            };
+            recorder.onstop = () => {
+               var url = URL.createObjectURL(new Blob(data, { type: "video/webm" }));
+               console.log("END")
+            };
+*/
+            function initAnimation(response) {
+               var k;
+               var el = $('#kanji_strokes_id');
+               var result = [];
+               var doc = $(response);
+               doc.find('path[d]').each(function() {
+                  var el = $(this);
+                  var type = el.attr('kvg:type');
+                  var paths = el.attr('d');
+                  result.push(type.charCodeAt(0).toString(16) + ':' + paths);
+               });
+               el.addClass('loaded');
+               el.show();
+               k = new Kanji(result, el, {
+                  brush: 'src/brush.png'
+               });
+               k.draw();
+               $('.kanji_play_button', el).on('click', function() {
+                  el.addClass('activated');
+//                  recorder.start();
+                  k.animateFromStart();
+               });
+           }
+         $.ajax({
+             type: 'GET',
+             dataType: 'xml',
+             url: url,
+             success: function(response) {
+               initAnimation(response);
+             }
+           });
+         })();
+      </script>
+   </body>
+</html>
+

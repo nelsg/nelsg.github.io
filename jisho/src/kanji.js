@@ -19070,6 +19070,7 @@ Canvas.prototype.extend({
     },
 
     clear: function() {
+        this.context.fillStyle = 'white';
         this.context.clearRect(0, 0, this.width, this.height);
     }
 
@@ -19496,11 +19497,12 @@ Animation.prototype.extend({
 }());
 
 
-var Kanji = Class(function Kanji(svgCommands, container, options) {
+var Kanji = Class(function Kanji(svgCommands, container, options, finishCallback) {
 
     options = options || {};
 
     var canvas = container.find('canvas');
+    this.finishCallback = finishCallback;
 
     this.setupCanvas(canvas.get(0));
     this.imageMap = new ImageMap(container.find('.stage'));
@@ -19655,6 +19657,10 @@ Kanji.prototype.extend({
             this.timer = setTimeout(function() {
                 next.animate();
             }, this.delayBetweenStrokes);
+        } else {
+            if (this.finishCallback != null) {
+                this.finishCallback();
+            }
         }
         this.animatingAll = !!next;
     },

@@ -1,12 +1,3 @@
 [submodule "kanjivg"]
 	path = kanjivg
 	url = https://github.com/KanjiVG/kanjivg.git
-[submodule "kanimaji"]
-	path = kanimaji
-	url = https://github.com/maurimo/kanimaji
-[submodule "kanimaji_jcsirot"]
-	path = kanimaji_jcsirot
-	url = https://github.com/jcsirot/kanimaji.git
-[submodule "kanimaji_Togeffet"]
-	path = kanimaji_Togeffet
-	url = https://github.com/Togeffet/kanimaji

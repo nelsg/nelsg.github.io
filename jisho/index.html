@@ -13,50 +13,54 @@
                document.getElementById("kanji").setAttribute('value', param_kanji);
             }
          </script>
-
-         <div>
-            <label>Type de pinceau: </label>
-            <input type="radio" id="brushClassic" name="brush" value="classic" checked="true">
-            <label for="brushClassic">Classic</label>
-            <input type="radio" id="brushBlur" name="brush" value="blur">
-            <label for="brushBlur">Flouté</label>
-         </div>
-         <script type="text/javascript">
-            const param_brush = (new URLSearchParams(window.location.search)).get('brush')
-            if (param_brush != null) {
-               if (param_brush == 'blur') {
-                  console.log("BLUR")
-                  document.getElementById("brushBlur").setAttribute('checked', true);
-               }
-               if (param_brush == 'classic') {
-                  console.log("CLASSIC")
-                  document.getElementById("brushClassic").setAttribute('checked', true);
-               }
-            }
-         </script>
          <button type="submit" form="form1" value="Submit">Valider</button>
+         <a id="download_button" href="path_to_file" download="proposed_file_name" hidden>Télécharger</a>
       </form>
-      <div id="kanji_strokes_id" class="kanji_strokes" data-area-name="brush">
-         <button class="kanji_play_button">
-            <svg viewBox="0 0 30 30" class="icon play-circle-icon " color="#fff"></svg>
-         </button>
-         <div class="stage">
-            <canvas id="my_canvas" width="600" height="600"></canvas>
+         <div id="kanji_strokes_id" class="kanji_strokes" data-area-name="brush">
+            <button class="kanji_play_button">
+               <svg viewBox="0 0 30 30" class="icon play-circle-icon " color="#fff"></svg>
+            </button>
+            <div class="stage">
+               <canvas id="my_canvas" width="600" height="600" style="background-color: #fff;"></canvas>
+            </div>
          </div>
-      </div>
       <script src="src/kanji.js"></script>
       <script>
+         const canvas = $('canvas#my_canvas')[0];
+         var ctx = canvas.getContext("2d");
+
+         ctx._clearRect = ctx.clearRect;
+         ctx.clearRect = function(x, y, width, height) {
+            ctx._clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            fillStyle = 'white';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); // fill white background
+         }
+
+         var data = [],
+            stream = canvas.captureStream(),
+            recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+         recorder.ondataavailable = function(event) {
+            if (event.data && event.data.size) {
+               data.push(event.data);
+            }
+         };
+         recorder.onstop = () => {
+            console.log("recorder.onstop")
+            var url = URL.createObjectURL(new Blob(data, { type: 'video/webm;codecs=vp8' }));
+            const a = document.getElementById("download_button")
+            a.style.display = "block";
+            a.href = url;
+            a.download = param_kanji + '.webm';
+         };
+
          /**
           * Indique si la chaine de caractère est un kanji unique
           */
          function isKanji(kanji_value) {
-            console.log("Value: >" + kanji_value + "<")
             if (! /^[\u4e00-\u9faf]+$/.test(kanji_value)) {
-               console.log("Not a Kanji")
                return false
             }
             if (kanji_value.length != 1) {
-               console.log("Only one character expected")
                return false
             }
             return true
@@ -71,6 +75,17 @@
                codeHex = "0" + codeHex;
             }
             return codeHex;
+         }
+
+         function sleep (time) {
+            return new Promise((resolve) => setTimeout(resolve, time));
+         }
+
+         function endAnimationCallback() {
+            sleep(1).then(() => {
+               recorder.stop();
+               console.log("END ANIMATION")
+            });
          }
          /**
           * Initialise l'animation
@@ -88,16 +103,17 @@
             });
             el.addClass('loaded');
             el.show();
-            brush_type = document.querySelector('input[name="brush"]:checked').value;
 
             k = new Kanji(result, el, {
-               brush: 'src/brush_' + brush_type + '.png'
-            });
+               brush: 'src/brush_classic.png'
+            }, endAnimationCallback);
+            k.setSpeed(1.5); // 1.5 - [0.3; 3]
+            k.setThickness(1.2); // 1.2 - [0.2; 3]
             k.draw();
-            $(".kanji_play_button").prop("onclick", null).off("click");
             $('.kanji_play_button', el).on('click', function() {
-               console.log("kanji_play_button")
+               console.log("START ANIMATION")
                el.addClass('activated');
+               recorder.start();
                k.animateFromStart();
             });
          }
@@ -109,7 +125,6 @@
             var url = '../kanjivg/kanji/04fe4-Kaisho.svg';
             if (isKanji(kanji_value)) {
                unicode_value = toUnicodeValue(kanji_value)
-               console.log(unicode_value)
                var url = '../kanjivg/kanji/' + unicode_value + '.svg';
             }
             $.ajax({

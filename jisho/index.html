@@ -14,6 +14,7 @@
             }
          </script>
          <button type="submit" form="form1" value="Submit">Valider</button>
+         <label id="kanji_label"></label>
          <a id="download_button" href="path_to_file" download="proposed_file_name" hidden>Télécharger</a>
       </form>
          <div id="kanji_strokes_id" class="kanji_strokes" data-area-name="brush">
@@ -117,6 +118,13 @@
                k.animateFromStart();
             });
          }
+         function isDebug() {
+            const debug_kanji = (new URLSearchParams(window.location.search)).get('debug');
+            if (debug_kanji != null) {
+               return true;
+            }
+            return false;
+         }
          /**
           * Initialise l'environnement avec les valeurs du formulaire
           */
@@ -126,6 +134,9 @@
             if (isKanji(kanji_value)) {
                unicode_value = toUnicodeValue(kanji_value)
                var url = '../kanjivg/kanji/' + unicode_value + '.svg';
+               if (isDebug()) {
+                  document.getElementById("kanji_label").innerHTML = unicode_value;
+               }
             }
             $.ajax({
                type: 'GET',
